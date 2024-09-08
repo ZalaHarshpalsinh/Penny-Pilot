@@ -16,4 +16,19 @@ app.use( express.urlencoded( {
 
 app.use( cookieParser() )
 
+
+
+import
+{
+    userRouter,
+    transactionRouter,
+    analysisRouter,
+    customizationRouter,
+} from "./routes"
+
+app.use( "api/v1/users", userRouter )
+app.use( "api/v1/transactions", transactionRouter )
+app.use( "api/v1/customizations", customizationRouter )
+app.use( "api/v1/analysis", analysisRouter )
+
 export default app
