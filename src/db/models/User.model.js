@@ -26,7 +26,7 @@ const userSchema = new Schema(
         refreshToken: {
             type: String,
         },
-        profileImage: {
+        profilePhoto: {
             type: String,
         },
     },
