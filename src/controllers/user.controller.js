@@ -272,3 +272,15 @@ const deleteUserAccount = asyncHandler( async ( req, res ) =>
         new ApiResponse( 200, {}, "User account deleted successfully" )
     )
 } )
+
+export
+{
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    getUserProfile,
+    updateUserProfileDetails,
+    updateUserProfilePhoto,
+    deleteUserAccount,
+}
