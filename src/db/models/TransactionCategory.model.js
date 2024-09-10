@@ -33,4 +33,4 @@ const transactionCategorySchema = new Schema( {
 
 const TransactionCategory = mongoose.model( 'TransactionCategory', transactionCategorySchema );
 
-export default Category
+export default TransactionCategory
