@@ -267,7 +267,7 @@ const updateTransactionGroup = async ( req, res ) =>
     }
 };
 
-export const deleteTransactionGroup = async ( req, res ) =>
+const deleteTransactionGroup = async ( req, res ) =>
 {
     try
     {
