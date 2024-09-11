@@ -19,7 +19,7 @@ const router = Router();
 
 router.post( "/register", upload.single( "profilePhoto" ), registerUser )
 router.post( "/login", loginUser )
-router.post( "/logout", logoutUser )
+router.post( "/logout", verifyJwt, logoutUser )
 router.post( "/refresh-token", refreshAccessToken )
 router.get( "/profile-details", verifyJwt, getUserProfile )
 router.patch( "/profile-details", verifyJwt, updateUserProfileDetails )
