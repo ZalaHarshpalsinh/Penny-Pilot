@@ -17,4 +17,6 @@ const dummyFriendSchema = new mongoose.Schema( {
     } ],
 } );
 
-export const DummyFriend = mongoose.model( 'DummyFriend', dummyFriendSchema );
+const DummyFriend = mongoose.model( 'DummyFriend', dummyFriendSchema );
+
+export default DummyFriend
