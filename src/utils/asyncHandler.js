@@ -1,3 +1,5 @@
+import { ApiError } from "./index.js";
+
 const asyncHandler = ( fn ) => async ( req, res, next ) =>
 {
     try
@@ -5,10 +7,21 @@ const asyncHandler = ( fn ) => async ( req, res, next ) =>
         await fn( req, res, next )
     } catch ( error )
     {
-        res.status( error.statusCode || 500 ).json( {
-            success: false,
-            message: error.message
-        } )
+        if ( error instanceof ApiError )
+        {
+            res.status( error.statusCode ).json( {
+                success: false,
+                message: error.message
+            } )
+        }
+        else
+        {
+            console.log( error )
+            res.status( 500 ).json( {
+                success: false,
+                message: "Something went wrong!",
+            } )
+        }
         next( error );
     }
 }

@@ -1,29 +1,80 @@
 import { asyncHandler, ApiError, ApiResponse, uploadOnCloudinary } from "../utils/index.js"
-import { Transaction } from "../db/index.js"
+import { DummyFriend, MoneyPool, Transaction, TransactionCategory, TransactionGroup } from "../db/index.js"
 
 const registerTransaction = asyncHandler( async ( req, res ) =>
 {
     const { title, description, type, amount, transactionDateTime, category, group, toMoneyPool, fromMoneyPool, dummyFriend } = req.body
 
-    const newTransaction = new Transaction( {
-        title,
-        description,
-        type,
-        amount: Number( amount ),
-        transactionDateTime: transactionDateTime || Date.now(),
-        user: req.user._id,
-        toMoneyPool,
-        fromMoneyPool,
-        category,
-        group,
-        dummyFriend,
-    } );
+    const transaction = new Transaction( {
+        title, description, type, amount, transactionDateTime
+    } )
 
-    // Save the transaction to the database
-    await newTransaction.save();
+    category = await TransactionCategory.findById( category );
+    group = await TransactionGroup.findById( group );
+    toMoneyPool = await MoneyPool.findById( toMoneyPool );
+    fromMoneyPool = await MoneyPool.findById( fromMoneyPool );
+    dummyFriend = await DummyFriend.findById( dummyFriend );
+
+    if ( type == "Income" )
+    {
+        transaction.category = category._id;
+        if ( group ) transaction.group = group._id;
+        transaction.toMoneyPool = toMoneyPool._id;
+        toMoneyPool.currentAmount += transaction.amount;
+        await toMoneyPool.save()
+    }
+    else if ( type == "Expense" )
+    {
+        transaction.category = category._id;
+        if ( group ) transaction.group = group._id;
+
+        if ( fromMoneyPool )
+        {
+            transaction.fromMoneyPool = fromMoneyPool._id;
+            fromMoneyPool.currentAmount -= transaction.amount;
+            await fromMoneyPool.save()
+        }
+        else
+        {
+            transaction.dummyFriend = dummyFriend._id
+            dummyFriend.amount -= transaction.amount
+            await dummyFriend.save()
+        }
+    }
+    else if ( type == "Lend" )
+    {
+        transaction.dummyFriend = dummyFriend._id;
+        dummyFriend.amount += transaction.amount
+        transaction.fromMoneyPool = fromMoneyPool._id;
+        fromMoneyPool.currentAmount -= transaction.amount;
+        await fromMoneyPool.save()
+        await dummyFriend.save()
+    }
+    else if ( type == "Borrowed" )
+    {
+        transaction.dummyFriend = dummyFriend._id;
+        dummyFriend.amount -= transaction.amount
+        transaction.toMoneyPool = toMoneyPool._id;
+        toMoneyPool.currentAmount += transaction.amount;
+
+        await dummyFriend.save()
+        await toMoneyPool.save()
+    }
+    else if ( type == "Transfer" )
+    {
+        transaction.fromMoneyPool = fromMoneyPool._id;
+        fromMoneyPool.currentAmount -= transaction.amount;
+        transaction.toMoneyPool = toMoneyPool._id;
+        toMoneyPool.currentAmount += transaction.amount;
+
+        await fromMoneyPool.save()
+        await toMoneyPool.save()
+    }
+
+    await transaction.save()
 
     res.status( 201 ).json(
-        new ApiResponse( 201, newTransaction, "Transaction added successfully" )
+        new ApiResponse( 201, transaction, "Transaction added successfully" )
     )
 } )
 

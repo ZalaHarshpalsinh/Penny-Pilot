@@ -14,12 +14,15 @@ const moneyPoolSchema = new Schema( {
     },
     icon: {
         type: String,
-        required: true,
     },
-    amount: {
+    initialAmount: {
         type: Number,
         required: true,
         min: [ 0, "Amount can not be negative" ],
+    },
+    currentAmount: {
+        type: Number,
+        required: true,
     },
     creator: {
         type: Schema.Types.ObjectId,

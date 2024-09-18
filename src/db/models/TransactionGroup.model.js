@@ -8,10 +8,6 @@ const transactionGroupSchema = new Schema( {
         trim: true,
         lowercase: true,
     },
-    icon: {
-        type: String,
-        required: true,
-    },
     description: {
         type: String,
         maxLength: 100,
@@ -20,6 +16,9 @@ const transactionGroupSchema = new Schema( {
         type: String,
         enum: [ 'Income', 'Expense' ],
         required: true,
+    },
+    icon: {
+        type: String,
     },
     creator: {
         type: Schema.Types.ObjectId,

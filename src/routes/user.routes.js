@@ -1,4 +1,6 @@
 import { Router } from "express";
+import verifyJwt from "../middlewares/auth.middleware.js"
+import upload from "../middlewares/multer.middleware.js"
 import 
 {
     registerUser,
@@ -10,14 +12,16 @@ import
     updateUserProfilePhoto,
     deleteUserAccount,
 } from "../controllers/user.controller.js"
+import
+{
+    registrationSchema,
+} from "../middlewares/validations/user.validation.js"
 
-import verifyJwt from "../middlewares/auth.middleware.js"
-import upload from "../middlewares/multer.middleware.js"
 
 const router = Router();
 
 
-router.post( "/register", upload.single( "profilePhoto" ), registerUser )
+router.post( "/register", upload.single( "profilePhoto" ), registrationSchema, registerUser )
 router.post( "/login", loginUser )
 router.post( "/logout", verifyJwt, logoutUser )
 router.post( "/refresh-token", refreshAccessToken )

@@ -1,289 +1,359 @@
-import { MoneyPool, DummyFriend, TransactionGroup, TransactionCategory } from "../db/index.js";
+import { MoneyPool, DummyFriend, TransactionGroup, TransactionCategory, Transaction } from "../db/index.js";
+import { ApiError, ApiResponse, asyncHandler, uploadOnCloudinary } from "../utils/index.js";
 
-const createMoneyPool = async ( req, res ) =>
+const createMoneyPool = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const moneyPool = new MoneyPool( req.body );
-        await moneyPool.save();
-        res.status( 201 ).json( moneyPool );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
+    const { name, description, initialAmount } = req.body;
 
-const getMoneyPools = async ( req, res ) =>
-{
-    try
-    {
-        const moneyPools = await MoneyPool.find();
-        res.status( 200 ).json( moneyPools );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: 'Server Error' } );
-    }
-};
+    const moneyPool = new MoneyPool( {
+        name, description, initialAmount,
+        currentAmount: initialAmount,
+        creator: req.user._id
+    } );
 
-const updateMoneyPool = async ( req, res ) =>
-{
-    try
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
     {
-        const moneyPool = await MoneyPool.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },//if data presents than change
-            { new: true, runValidators: true }
-        );
-        if ( !moneyPool )
+        if ( !iconFile )
         {
-            return res.status( 404 ).json( { error: 'Money Pool not found' } );
+            throw new ApiError( 500, "Error while uploading icon file" );
         }
-        res.status( 200 ).json( moneyPool );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const deleteMoneyPool = async ( req, res ) =>
-{
-    try
-    {
-        const moneyPool = await MoneyPool.findByIdAndDelete( req.params.id );
-        if ( !moneyPool )
+        else
         {
-            return res.status( 404 ).json( { error: 'Money Pool not found' } );
+            moneyPool.icon = iconFile.url
         }
-        res.status( 204 ).send();
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: 'Server Error' } );
     }
-};
 
-const createDummyFriend = async ( req, res ) =>
+    await moneyPool.save();
+
+    res.status( 201 ).json( new ApiResponse( 201, moneyPool, "Money pool created successfully" ) );
+} )
+
+const getMoneyPools = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const { name, email, creator } = req.body;
-        const existingDummyFriend = await DummyFriend.findOne( { name } );
+    const moneyPools = await MoneyPool.find( { creator: req.user._id } )
 
-        if ( existingDummyFriend )
+    res.status( 200 ).json( new ApiResponse( 200, moneyPools, "Request served successfully" ) )
+} )
+
+const updateMoneyPool = asyncHandler( async ( req, res ) =>
+{
+    const moneyPoolId = req.params.id
+    const { name, description, initialAmount } = req.body
+
+    const moneyPool = await MoneyPool.findOne( {
+        _id: moneyPoolId,
+        creator: req.user._id,
+    } )
+
+    if ( !moneyPool )
+    {
+        throw new ApiError( 404, "Money pool not found" )
+    }
+
+    moneyPool.name = name
+    moneyPool.description = description
+    moneyPool.currentAmount += ( initialAmount - moneyPool.initialAmount )
+    moneyPool.initialAmount = initialAmount
+
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
+    {
+        if ( !iconFile )
         {
-            return res.status( 400 ).json( { error: 'A DummyFriend with this name already exists. Please choose a different name.' } );
+            throw new ApiError( 500, "Error while uploading icon file" );
         }
-        const newDummyFriend = new DummyFriend( req.body );
-
-        await newDummyFriend.save();
-        res.status( 201 ).json( newDummyFriend );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const getDummyFriends = async ( req, res ) =>
-{
-    try
-    {
-        const dummyFriends = await DummyFriend.find() // .populate('creator');
-        res.status( 200 ).json( dummyFriends );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const updateDummyFriend = async ( req, res ) =>
-{
-    try
-    {
-        // const updates = req.body;
-        const updatedDummyFriend = await DummyFriend.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true, runValidators: true }
-        );
-        if ( !updatedDummyFriend )
+        else
         {
-            return res.status( 404 ).json( { error: 'DummyFriend not found' } );
+            moneyPool.icon = iconFile.url
         }
-
-        res.status( 200 ).json( updatedDummyFriend );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
     }
-};
 
-const deleteDummyFriend = async ( req, res ) =>
+    await moneyPool.save()
+
+    res.status( 200 ).json( new ApiResponse( 200, moneyPool, "Success" ) )
+} )
+
+const deleteMoneyPool = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const deletedDummyFriend = await DummyFriend.findByIdAndDelete( req.params.id );
+    const moneyPoolId = req.params.id
 
-        if ( !deletedDummyFriend )
-        {
-            return res.status( 404 ).json( { error: 'DummyFriend not found' } );
-        }
+    const moneyPool = await MoneyPool.findOne( {
+        _id: moneyPoolId,
+        creator: req.user._id,
+    } )
 
-        res.status( 200 ).json( { message: 'DummyFriend deleted successfully' } );
-    } catch ( err )
+    if ( !moneyPool )
     {
-        res.status( 400 ).json( { error: err.message } );
+        throw new ApiError( 404, "Money pool not found" )
     }
-};
+
+    await moneyPool.remove()
+
+    res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
+} )
+
+const createDummyFriend = asyncHandler( async ( req, res ) =>
+{
+    const { name, email } = req.body;
+
+    const dummyFriend = new DummyFriend( {
+        name, email, amount: 0,
+        creator: req.user._id,
+    } );
+
+    await dummyFriend.save();
+
+    res.status( 201 ).json( new ApiResponse( 201, dummyFriend, "Dummy friend created successfully" ) );
+} )
+
+const getDummyFriends = asyncHandler( async ( req, res ) =>
+{
+    const dummyFriends = await DummyFriend.find( { creator: req.user._id } )
+
+    res.status( 200 ).json( new ApiResponse( 200, dummyFriends, "Request served successfully" ) )
+} )
+
+const updateDummyFriend = asyncHandler( async ( req, res ) =>
+{
+    const dummyFriendId = req.params.id
+    const { name, email } = req.body
+
+    const dummyFriend = await DummyFriend.findOne( {
+        _id: dummyFriendId,
+        creator: req.user._id,
+    } )
+
+    if ( !dummyFriend )
+    {
+        throw new ApiError( 404, "Money pool not found" )
+    }
+
+    dummyFriend.name = name
+    dummyFriend.email = email
+
+    await dummyFriend.save()
+
+    res.status( 200 ).json( new ApiResponse( 200, dummyFriend, "Success" ) )
+} )
+
+const deleteDummyFriend = asyncHandler( async ( req, res ) =>
+{
+    const dummyFriendId = req.params.id
+
+    const dummyFriend = await DummyFriend.findOne( {
+        _id: dummyFriendId,
+        creator: req.user._id,
+    } )
+
+    if ( !dummyFriend )
+    {
+        throw new ApiError( 404, "Money pool not found" )
+    }
+
+    await dummyFriend.remove()
+
+    res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
+} )
+
 
 // tranction -Cat 1,2,3,4
-const createTransactionCategory = async ( req, res ) =>
+const createTransactionCategory = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const { name, transactionType } = req.body;
-        const existingCategory = await TransactionCategory.findOne( { name, transactionType } );
+    const { name, description, transactionType } = req.body;
 
-        if ( existingCategory )
+    const tranctionCategory = new TransactionCategory( {
+        name, description, transactionType,
+        creator: req.user._id
+    } );
+
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
+    {
+        if ( !iconFile )
         {
-            return res.status( 400 ).json( { error: 'A Transaction Category with this name and type already exists.' } );
+            throw new ApiError( 500, "Error while uploading icon file" );
         }
-
-        const newCategory = new TransactionCategory( req.body );
-        await newCategory.save();
-        res.status( 201 ).json( newCategory );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const getTransactionCategories = async ( req, res ) =>
-{
-    try
-    {
-        const categories = await TransactionCategory.find()// populate('creator');
-        res.status( 200 ).json( categories );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const updateTransactionCategory = async ( req, res ) =>
-{
-    try
-    {
-        const updates = req.body;
-
-        const updatedCategory = await TransactionCategory.findByIdAndUpdate(
-            req.params.id,
-            { $set: updates },
-            { new: true, runValidators: true }
-        );
-
-        if ( !updatedCategory )
+        else
         {
-            return res.status( 404 ).json( { error: 'Transaction Category not found' } );
+            tranctionCategory.icon = iconFile.url
         }
-
-        res.status( 200 ).json( updatedCategory );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
     }
-};
 
-const deleteTransactionCategory = async ( req, res ) =>
+
+    await tranctionCategory.save();
+
+    res.status( 201 ).json( new ApiResponse( 201, tranctionCategory, "Created successfully" ) );
+} )
+
+const getTransactionCategories = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const deletedCategory = await TransactionCategory.findByIdAndDelete( req.params.id );
+    const transactionCategories = await TransactionCategory.find( {
+        $or: [
+            { creator: null }, { creator: req.user._id }
+        ]
+    } )
 
-        if ( !deletedCategory )
-        {
-            return res.status( 404 ).json( { error: 'Transaction Category not found' } );
-        }
+    res.status( 200 ).json( new ApiResponse( 200, transactionCategories, "Request served successfully" ) )
+} )
 
-        res.status( 200 ).json( { message: 'Transaction Category deleted successfully' } );
-    } catch ( err )
+const updateTransactionCategory = asyncHandler( async ( req, res ) =>
+{
+    const tranctionCategoryId = req.params.id
+    const { name, description } = req.body
+
+    const transactionCategory = await TransactionCategory.findOne( {
+        _id: tranctionCategoryId,
+        creator: req.user._id,
+    } )
+
+    if ( !transactionCategory )
     {
-        res.status( 400 ).json( { error: err.message } );
+        throw new ApiError( 404, "Category not found" )
     }
-};
+
+    transactionCategory.name = name
+    transactionCategory.description = description
+
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
+    {
+        if ( !iconFile )
+        {
+            throw new ApiError( 500, "Error while uploading icon file" );
+        }
+        else
+        {
+            transactionCategory.icon = iconFile.url
+        }
+    }
+
+    await transactionCategory.save()
+
+    res.status( 200 ).json( new ApiResponse( 200, transactionCategory, "Success" ) )
+} )
+
+const deleteTransactionCategory = asyncHandler( async ( req, res ) =>
+{
+    const tranctionCategoryId = req.params.id
+
+    const tranctionCategory = await TransactionCategory.findOne( {
+        _id: tranctionCategoryId,
+        creator: req.user._id,
+    } )
+
+    if ( !tranctionCategory )
+    {
+        throw new ApiError( 404, "Money pool not found" )
+    }
+
+    await tranctionCategory.remove()
+
+    res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
+} )
+
+
 // Tranction-group 1,2,3,4
-const createTransactionGroup = async ( req, res ) =>
+const createTransactionGroup = asyncHandler( async ( req, res ) =>
 {
-    try
+    const { name, description, transactionType } = req.body;
+
+    const transactionGroup = new TransactionGroup( {
+        name, description, transactionType,
+        creator: req.user._id
+    } );
+
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
     {
-        const { name, icon, description, transactionType, creator } = req.body;
-
-        const existingGroup = await TransactionGroup.findOne( { name, transactionType } );
-
-        if ( existingGroup )
+        if ( !iconFile )
         {
-            return res.status( 400 ).json( { error: 'A Transaction Group with this name and type already exists.' } );
+            throw new ApiError( 500, "Error while uploading icon file" );
         }
-        const newGroup = new TransactionGroup( { name, icon, description, transactionType, creator } );
-        await newGroup.save();
-        res.status( 201 ).json( newGroup );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const getTransactionGroups = async ( req, res ) =>
-{
-    try
-    {
-        const groups = await TransactionGroup.find() // .populate('creator');
-        res.status( 200 ).json( groups );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
-    }
-};
-
-const updateTransactionGroup = async ( req, res ) =>
-{
-    try
-    {
-        const updates = req.body;
-
-        const updatedGroup = await TransactionGroup.findByIdAndUpdate(
-            req.params.id,
-            { $set: updates },
-            { new: true, runValidators: true }
-        );
-
-        if ( !updatedGroup )
+        else
         {
-            return res.status( 404 ).json( { error: 'Transaction Group not found' } );
+            transactionGroup.icon = iconFile.url
         }
-
-        res.status( 200 ).json( updatedGroup );
-    } catch ( err )
-    {
-        res.status( 400 ).json( { error: err.message } );
     }
-};
 
-const deleteTransactionGroup = async ( req, res ) =>
+    await transactionGroup.save();
+
+    res.status( 201 ).json( new ApiResponse( 201, transactionGroup, "Created successfully" ) );
+} )
+
+const getTransactionGroups = asyncHandler( async ( req, res ) =>
 {
-    try
-    {
-        const deletedGroup = await TransactionGroup.findByIdAndDelete( req.params.id );
+    const transactionGroups = await TransactionGroup.find( { creator: req.user._id } )
 
-        if ( !deletedGroup )
-        {
-            return res.status( 404 ).json( { error: 'Transaction Group not found' } );
-        }
+    res.status( 200 ).json( new ApiResponse( 200, transactionGroups, "Request served successfully" ) )
+} )
 
-        res.status( 200 ).json( { message: 'Transaction Group deleted successfully' } );
-    } catch ( err )
+const updateTransactionGroup = asyncHandler( async ( req, res ) =>
+{
+    const transactionGroupId = req.params.id
+    const { name, description } = req.body
+
+    const transactionGroup = await TransactionGroup.findOne( {
+        _id: transactionGroupId,
+        creator: req.user._id,
+    } )
+
+    if ( !transactionGroup )
     {
-        res.status( 400 ).json( { error: err.message } );
+        throw new ApiError( 404, "Group not found" )
     }
-};
+
+    transactionGroup.name = name
+    transactionGroup.description = description
+
+    const iconFilePath = req.file?.path;
+    const iconFile = await uploadOnCloudinary( iconFilePath );
+
+    if ( iconFilePath )
+    {
+        if ( !iconFile )
+        {
+            throw new ApiError( 500, "Error while uploading icon file" );
+        }
+        else
+        {
+            transactionGroup.icon = iconFile.url
+        }
+    }
+
+    await transactionGroup.save()
+
+    res.status( 200 ).json( new ApiResponse( 200, transactionGroup, "Success" ) )
+} )
+
+const deleteTransactionGroup = asyncHandler( async ( req, res ) =>
+{
+    const transactionGroupId = req.params.id
+
+    const transactionGroup = await TransactionGroup.findOne( {
+        _id: transactionGroupId,
+        creator: req.user._id,
+    } )
+
+    if ( !transactionGroup )
+    {
+        throw new ApiError( 404, "Group not found" )
+    }
+
+    await transactionGroup.remove()
+
+    res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
+} )
 
 export
 {
