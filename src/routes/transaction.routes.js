@@ -2,6 +2,11 @@ import { Router } from "express";
 import
 {
     registerTransaction,
+    registerIncomeTransaction,
+    registerExpenseTransaction,
+    registerLendTransaction,
+    registerBorrowTransaction,
+    registerTransferTransaction,
     getAllTransactions,
     getSingleTransaction,
     updateTransaction,
@@ -11,6 +16,13 @@ import verifyJwt from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.post( "/", verifyJwt, registerTransaction )
+router.post( "/income", verifyJwt, registerIncomeTransaction )
+router.post( "/expense", verifyJwt, registerExpenseTransaction )
+router.post( "/lend", verifyJwt, registerLendTransaction )
+router.post( "/borrow", verifyJwt, registerBorrowTransaction )
+router.post( "/transfer", verifyJwt, registerTransferTransaction )
+
+
 router.get( "/", verifyJwt, getAllTransactions )
 router.get( "/:id", verifyJwt, getSingleTransaction )
 router.patch( "/:id", verifyJwt, updateTransaction )

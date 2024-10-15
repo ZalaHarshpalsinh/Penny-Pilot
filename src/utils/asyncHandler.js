@@ -10,14 +10,16 @@ const asyncHandler = ( fn ) => async ( req, res, next ) =>
         if ( error instanceof ApiError )
         {
             res.status( error.statusCode ).json( {
+                statusCode: error.statusCode,
                 success: false,
-                message: error.message
+                message: error.message,
             } )
         }
         else
         {
             console.log( error )
             res.status( 500 ).json( {
+                statusCode: 500,
                 success: false,
                 message: "Something went wrong!",
             } )

@@ -10,7 +10,6 @@ const transactionSchema = new Schema( {
     ,
     description: {
         type: String,
-        required: true,
         maxLength: 100,
     },
     type: {
@@ -43,7 +42,6 @@ const transactionSchema = new Schema( {
     },
     category: {
         type: Schema.Types.ObjectId,
-        required: true,
         ref: 'TransactionCategory',
     },
     group: {
@@ -55,6 +53,10 @@ const transactionSchema = new Schema( {
     //     ref: 'User'
     // },
     dummyFriend: {
+        type: mongoose.Types.ObjectId,
+        ref: 'DummyFriend'
+    },
+    paidBy: {
         type: mongoose.Types.ObjectId,
         ref: 'DummyFriend'
     }

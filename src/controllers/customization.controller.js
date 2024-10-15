@@ -3,11 +3,11 @@ import { ApiError, ApiResponse, asyncHandler, uploadOnCloudinary } from "../util
 
 const createMoneyPool = asyncHandler( async ( req, res ) =>
 {
-    const { name, description, initialAmount } = req.body;
+    const { name, description } = req.body;
 
     const moneyPool = new MoneyPool( {
-        name, description, initialAmount,
-        currentAmount: initialAmount,
+        name, description,
+        amount: 0,
         creator: req.user._id
     } );
 
@@ -100,6 +100,8 @@ const deleteMoneyPool = asyncHandler( async ( req, res ) =>
 const createDummyFriend = asyncHandler( async ( req, res ) =>
 {
     const { name, email } = req.body;
+
+    console.log( name, email )
 
     const dummyFriend = new DummyFriend( {
         name, email, amount: 0,
@@ -196,9 +198,11 @@ const getTransactionCategories = asyncHandler( async ( req, res ) =>
 {
     const transactionCategories = await TransactionCategory.find( {
         $or: [
-            { creator: null }, { creator: req.user._id }
+            { creator: { $eq: null } }, { creator: req.user._id }
         ]
     } )
+
+    console.log( transactionCategories );
 
     res.status( 200 ).json( new ApiResponse( 200, transactionCategories, "Request served successfully" ) )
 } )

@@ -15,12 +15,7 @@ const moneyPoolSchema = new Schema( {
     icon: {
         type: String,
     },
-    initialAmount: {
-        type: Number,
-        required: true,
-        min: [ 0, "Amount can not be negative" ],
-    },
-    currentAmount: {
+    amount: {
         type: Number,
         required: true,
     },

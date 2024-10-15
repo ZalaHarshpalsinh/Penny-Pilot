@@ -36,7 +36,7 @@ const registerUser = asyncHandler( async ( req, res ) =>
         throw new ApiError( 400, "Profile photo is required" )
     }
 
-    const profilePhoto = uploadOnCloudinary( profilePhotoLocalPath )
+    const profilePhoto = await uploadOnCloudinary( profilePhotoLocalPath )
 
     if ( !profilePhoto )
     {
@@ -64,12 +64,14 @@ const registerUser = asyncHandler( async ( req, res ) =>
             name: "Wallet",
             description: "Personal wallet",
             amount: 0,
+            icon: "https://res.cloudinary.com/dvcnfady1/image/upload/v1728973603/pingup/default%20photos/cuagu4gqk74hxu9z4cui.png",
             creator: createdUser._id
         },
         {
             name: "Bank Account",
             description: "Savings bank account",
             amount: 0,
+            icon: "https://res.cloudinary.com/dvcnfady1/image/upload/v1728973701/pingup/default%20photos/ff6ahahsj21oem8ncnr0.png",
             creator: createdUser._id
         } );
 
@@ -113,7 +115,9 @@ const loginUser = asyncHandler( async ( req, res ) =>
 
     const options = {
         httpOnly: true,
-        secure: true
+        maxAge: 86_400_000,
+        secure: true,
+        sameSite: 'None',
     }
 
     return res
