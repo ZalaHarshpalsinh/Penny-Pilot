@@ -10,6 +10,10 @@ const dummyFriendSchema = new mongoose.Schema( {
         type: String,
         match: [ /.+@.+\..+/, 'Email is invalid' ]
     },
+    amount: {
+        type: Number,
+        required: true,
+    },
     creator: [ {
         type: mongoose.Types.ObjectId,
         ref: 'User',

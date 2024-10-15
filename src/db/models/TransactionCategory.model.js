@@ -8,10 +8,6 @@ const transactionCategorySchema = new Schema( {
         trim: true,
         lowercase: true,
     },
-    icon: {
-        type: String,
-        required: true,
-    },
     description: {
         type: String,
         maxLength: 100,
@@ -21,9 +17,8 @@ const transactionCategorySchema = new Schema( {
         enum: [ 'Income', 'Expense' ],
         required: true,
     },
-    type: {
+    icon: {
         type: String,
-        enum: [ 'Default', 'Custom' ]
     },
     creator: {
         type: Schema.Types.ObjectId,

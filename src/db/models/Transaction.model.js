@@ -10,7 +10,6 @@ const transactionSchema = new Schema( {
     ,
     description: {
         type: String,
-        required: true,
         maxLength: 100,
     },
     type: {
@@ -43,18 +42,21 @@ const transactionSchema = new Schema( {
     },
     category: {
         type: Schema.Types.ObjectId,
-        ref: 'ExpenseCategory',
-        required: true,
+        ref: 'TransactionCategory',
     },
     group: {
         type: Schema.Types.ObjectId,
-        ref: 'ExpenseGroup',
+        ref: 'TransactionGroup',
     },
-    friend: {
-        type: mongoose.Types.ObjectId,
-        ref: 'User'
-    },
+    // friend: {
+    //     type: mongoose.Types.ObjectId,
+    //     ref: 'User'
+    // },
     dummyFriend: {
+        type: mongoose.Types.ObjectId,
+        ref: 'DummyFriend'
+    },
+    paidBy: {
         type: mongoose.Types.ObjectId,
         ref: 'DummyFriend'
     }

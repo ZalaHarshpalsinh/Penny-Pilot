@@ -1,16 +1,26 @@
 import { asyncHandler, ApiError, ApiResponse, uploadOnCloudinary } from "../utils/index.js"
-import { User } from "../db/index.js"
+import { MoneyPool, User } from "../db/index.js"
+import { validationResult } from "express-validator"
 
 const registerUser = asyncHandler( async ( req, res ) =>
 {
+    // const errors = validationResult( req );
+
+    // if ( !errors.isEmpty() )
+    // {
+    //     // not valid
+    //     console.log( errors );
+    //     throw new ApiError( 400, "Invalid inputs, please try again." );
+    // }
+
     const { username, email, password } = req.body
 
-    if (
-        [ username, email, password ].some( ( field ) => !field?.trim() )
-    )
-    {
-        throw new ApiError( 400, "All fields are required" )
-    }
+    // if (
+    //     [ username, email, password ].some( ( field ) => !field?.trim() )
+    // )
+    // {
+    //     throw new ApiError( 400, "All fields are required" )
+    // }
 
     const existedUser = await User.findOne( { email } )
 
@@ -26,7 +36,7 @@ const registerUser = asyncHandler( async ( req, res ) =>
         throw new ApiError( 400, "Profile photo is required" )
     }
 
-    const profilePhoto = uploadOnCloudinary( profilePhotoLocalPath )
+    const profilePhoto = await uploadOnCloudinary( profilePhotoLocalPath )
 
     if ( !profilePhoto )
     {
@@ -49,6 +59,22 @@ const registerUser = asyncHandler( async ( req, res ) =>
         throw new ApiError( 500, "Something went wrong while registering the user" )
     }
 
+    const moneypools = await MoneyPool.create(
+        {
+            name: "Wallet",
+            description: "Personal wallet",
+            amount: 0,
+            icon: "https://res.cloudinary.com/dvcnfady1/image/upload/v1728973603/pingup/default%20photos/cuagu4gqk74hxu9z4cui.png",
+            creator: createdUser._id
+        },
+        {
+            name: "Bank Account",
+            description: "Savings bank account",
+            amount: 0,
+            icon: "https://res.cloudinary.com/dvcnfady1/image/upload/v1728973701/pingup/default%20photos/ff6ahahsj21oem8ncnr0.png",
+            creator: createdUser._id
+        } );
+
     return res.status( 201 ).json(
         new ApiResponse( 201, createdUser, "User registered Successfully" )
     )
@@ -59,11 +85,11 @@ const loginUser = asyncHandler( async ( req, res ) =>
 {
     const { email, password } = req.body
 
-    if ( !( email?.trim() ) )
-    {
-        console.log( email )
-        throw new ApiError( 400, "Email is required" )
-    }
+    // if ( !( email?.trim() ) )
+    // {
+    //     console.log( email )
+    //     throw new ApiError( 400, "Email is required" )
+    // }
 
     const user = await User.findOne( { email } )
 
@@ -89,7 +115,9 @@ const loginUser = asyncHandler( async ( req, res ) =>
 
     const options = {
         httpOnly: true,
-        secure: true
+        maxAge: 86_400_000,
+        secure: true,
+        sameSite: 'None',
     }
 
     return res
@@ -208,10 +236,10 @@ const updateUserProfileDetails = asyncHandler( async ( req, res ) =>
 {
     const { email, username } = req.body
 
-    if ( !username || !email )
-    {
-        throw new ApiError( 400, "All fields are required" )
-    }
+    // if ( !username || !email )
+    // {
+    //     throw new ApiError( 400, "All fields are required" )
+    // }
 
     const user = await User.findByIdAndUpdate(
         req.user._id,
