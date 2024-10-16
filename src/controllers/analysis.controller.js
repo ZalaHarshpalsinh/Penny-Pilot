@@ -1,224 +1,124 @@
 import { Transaction } from "../db/index.js";
+import { asyncHandler, ApiResponse, ApiError } from "../utils/index.js";
 
-const incomeCat = async ( req, res ) =>
+const getIncomeAnalysisCategoryWise = asyncHandler( async ( req, res ) =>
 {
+    const userId = req.user._id;
+    const { month, year } = req.query;
+
     try
     {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Income" } },
-            { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
+        // Parse month and year as numbers
+        const monthInt = parseInt( month );
+        const yearInt = parseInt( year );
+
+        // Construct the start and end date range for the given month and year
+        const startDate = new Date( yearInt, monthInt - 1, 1 ); // start of the month
+        const endDate = new Date( yearInt, monthInt, 1 ); // start of the next month
+
+        // Find transactions for the given user, within the specified date range, and sort by date (most recent first)
+        const incomes = await Transaction.aggregate( [
+            {
+                $match: {
+                    user: userId,
+                    type: 'Income',
+                    transactionDateTime: { $gte: startDate, $lt: endDate },
+                }
+            },
+            {
+                $group: {
+                    _id: "$category",
+                    totalAmount: { $sum: "$amount" }  // Sum the amounts for each category
+                }
+            },
+            {
+                $lookup: {
+                    from: "transactioncategories", // Collection for categories
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "categoryInfo"
+                }
+            },
+            {
+                $unwind: "$categoryInfo"
+            },
+            {
+                $project: {
+                    _id: 0,
+                    categoryName: "$categoryInfo.name",
+                    totalAmount: 1
+                }
+            }
         ] );
-        res.status( 200 ).json( result );
+
+        res.status( 200 ).json( new ApiResponse( 200, incomes, "Success" ) )
     } catch ( error )
     {
         console.error( error );
-        res.status( 500 ).json( { error: 'Server Error' } );
+        res.status( 500 ).json( { error: "Server error" } );
     }
-};
+} )
 
-const incomeTransactionGroupWise = async ( req, res ) =>
+const getExpenseAnalysisCategoryWise = asyncHandler( async ( req, res ) =>
 {
+    const userId = req.user._id;
+    const { month, year } = req.query;
+
     try
     {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Income" } },
-            { $group: { _id: "$group", totalAmount: { $sum: "$amount" } } },
+        // Parse month and year as numbers
+        const monthInt = parseInt( month );
+        const yearInt = parseInt( year );
+
+        // Construct the start and end date range for the given month and year
+        const startDate = new Date( yearInt, monthInt - 1, 1 ); // start of the month
+        const endDate = new Date( yearInt, monthInt, 1 ); // start of the next month
+
+        // Find transactions for the given user, within the specified date range, and sort by date (most recent first)
+        const expenses = await Transaction.aggregate( [
+            {
+                $match: {
+                    user: userId,
+                    type: 'Expense',
+                    transactionDateTime: { $gte: startDate, $lt: endDate },
+                }
+            },
+            {
+                $group: {
+                    _id: "$category",
+                    totalAmount: { $sum: "$amount" }  // Sum the amounts for each category
+                }
+            },
+            {
+                $lookup: {
+                    from: "transactioncategories", // Collection for categories
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "categoryInfo"
+                }
+            },
+            {
+                $unwind: "$categoryInfo"
+            },
+            {
+                $project: {
+                    _id: 0,
+                    categoryName: "$categoryInfo.name",
+                    totalAmount: 1
+                }
+            }
         ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
 
-const incomeMoneyPoolWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Income" } },
-            { $group: { _id: "$toMoneyPool", totalAmount: { $sum: "$amount" } } },
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-}
-
-//Exepense 1,2,3
-const expenseCat = async ( req, res ) =>
-{
-    try
-    {
-
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Expense" } },
-            { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-
-        // const totalSum = transactions.reduce((acc, curr) => acc + curr.totalAmount, 0);
-
-
-        // const result = transactions.map(transaction => {
-        //     return {
-        //         category: transaction.category,
-        //         totalAmount: transaction.totalAmount,
-        //         percentage: ((transaction.totalAmount / totalSum) * 100).toFixed(2) 
-        //     };
-        // });
-
-        res.status( 200 ).json( result );
+        res.status( 200 ).json( new ApiResponse( 200, expenses, "Success" ) )
     } catch ( error )
     {
         console.error( error );
-        res.status( 500 ).json( { error: 'Server Error' } );
+        res.status( 500 ).json( { error: "Server error" } );
     }
-};
-
-const expenseTransactionGroupWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Expense" } },
-            { $group: { _id: "$group", totalAmount: { $sum: "$amount" } } },
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-const expenseMoneyPoolWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Expense" } },
-            { $group: { _id: "$toMoneyPool", totalAmount: { $sum: "$amount" } } },
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-}
-
-// LENT -1,2,3
-const lentCategoryWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Lend" } },
-            { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-const lentFriendWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Lend" } },
-            { $group: { _id: "$friend", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-const lentMoneyPoolWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Lend" } },
-            { $group: { _id: "$toMoneyPool", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-
-// BORROWED -1,2,3
-const borrowedCategoryWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Borrow" } },
-            { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-const borrowedFriendWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Borrow" } },
-            { $group: { _id: "$friend", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
-
-const borrowedMoneyPoolWise = async ( req, res ) =>
-{
-    try
-    {
-        const result = await Transaction.aggregate( [
-            { $match: { type: "Borrow" } },
-            { $group: { _id: "$fromMoneyPool", totalAmount: { $sum: "$amount" } } },
-            { $sort: { totalAmount: -1 } }
-        ] );
-        res.status( 200 ).json( result );
-    } catch ( err )
-    {
-        res.status( 500 ).json( { error: "Server Error" } );
-    }
-};
+} )
 
 export
 {
-    incomeCat,
-    incomeTransactionGroupWise,
-    incomeMoneyPoolWise,
-    expenseCat,
-    expenseTransactionGroupWise,
-    expenseMoneyPoolWise,
-    lentCategoryWise,
-    lentFriendWise,
-    lentMoneyPoolWise,
-    borrowedCategoryWise,
-    borrowedFriendWise,
-    borrowedMoneyPoolWise,
+    getIncomeAnalysisCategoryWise,
+    getExpenseAnalysisCategoryWise,
 }
