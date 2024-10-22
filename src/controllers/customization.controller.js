@@ -41,7 +41,7 @@ const getMoneyPools = asyncHandler( async ( req, res ) =>
 const updateMoneyPool = asyncHandler( async ( req, res ) =>
 {
     const moneyPoolId = req.params.id
-    const { name, description, initialAmount } = req.body
+    const { name, description } = req.body
 
     const moneyPool = await MoneyPool.findOne( {
         _id: moneyPoolId,
@@ -55,8 +55,6 @@ const updateMoneyPool = asyncHandler( async ( req, res ) =>
 
     moneyPool.name = name
     moneyPool.description = description
-    moneyPool.currentAmount += ( initialAmount - moneyPool.initialAmount )
-    moneyPool.initialAmount = initialAmount
 
     const iconFilePath = req.file?.path;
     const iconFile = await uploadOnCloudinary( iconFilePath );
@@ -92,7 +90,16 @@ const deleteMoneyPool = asyncHandler( async ( req, res ) =>
         throw new ApiError( 404, "Money pool not found" )
     }
 
-    await moneyPool.remove()
+    const tranctions = await Transaction.find( {
+        $or: [ { fromMoneyPool: moneyPoolId }, { toMoneyPool: moneyPoolId } ]
+    } )
+
+    if ( tranctions.length > 0 )
+    {
+        throw new ApiError( 400, "Can't delete this money pool, it is involved with current transactions." );
+    }
+
+    await moneyPool.deleteOne()
 
     res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
 } )
@@ -157,7 +164,16 @@ const deleteDummyFriend = asyncHandler( async ( req, res ) =>
         throw new ApiError( 404, "Money pool not found" )
     }
 
-    await dummyFriend.remove()
+    const tranctions = await Transaction.find( {
+        $or: [ { dummyFriend: dummyFriendId }, { paidBy: dummyFriendId } ]
+    } )
+
+    if ( tranctions.length > 0 )
+    {
+        throw new ApiError( 400, "Can't delete this friend, it is involved with current transactions." );
+    }
+
+    await dummyFriend.deleteOne()
 
     res.status( 200 ).json( new ApiResponse( 200, {}, "Success" ) )
 } )

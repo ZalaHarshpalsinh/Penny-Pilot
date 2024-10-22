@@ -3,17 +3,19 @@ import
 {
     getIncomeAnalysisCategoryWise,
     getExpenseAnalysisCategoryWise,
+    getIncomeAnalysisGroupWise,
+    getExpenseAnalysisGroupWise,
 } from "../controllers/analysis.controller.js"
 import verifyJwt from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
 router.get( "/income/category-wise", verifyJwt, getIncomeAnalysisCategoryWise )
-// router.get( "/income/transaction-group-wise", verifyJwt, incomeTransactionGroupWise )
+router.get( "/income/transaction-group-wise", verifyJwt, getIncomeAnalysisGroupWise )
 // router.get( "/income/money-pool-wise", verifyJwt, incomeMoneyPoolWise )
 
 router.get( "/expense/category-wise", verifyJwt, getExpenseAnalysisCategoryWise )
-// router.get( "/expense/transaction-group-wise", verifyJwt, expenseTransactionGroupWise )
+router.get( "/expense/transaction-group-wise", verifyJwt, getExpenseAnalysisGroupWise )
 // router.get( "/expense/money-pool-wise", verifyJwt, expenseMoneyPoolWise )
 
 // router.get( "/lent/category-wise", verifyJwt, lentCategoryWise )

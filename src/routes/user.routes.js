@@ -26,7 +26,7 @@ router.post( "/login", loginUser )
 router.post( "/logout", verifyJwt, logoutUser )
 router.post( "/refresh-token", refreshAccessToken )
 router.get( "/profile-details", verifyJwt, getUserProfile )
-router.patch( "/profile-details", verifyJwt, updateUserProfileDetails )
+router.patch( "/profile-details", verifyJwt, upload.single( "profilePhoto" ), updateUserProfileDetails )
 router.patch( "/profile-photo", verifyJwt, upload.single( "profilePhoto" ), updateUserProfilePhoto )
 router.delete( "/account", verifyJwt, deleteUserAccount )
 
