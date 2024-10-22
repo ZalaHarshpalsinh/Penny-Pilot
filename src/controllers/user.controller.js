@@ -241,12 +241,28 @@ const updateUserProfileDetails = asyncHandler( async ( req, res ) =>
     //     throw new ApiError( 400, "All fields are required" )
     // }
 
+    let profilePhotoFilePath = req.file?.path;
+    const profilePhotoFile = await uploadOnCloudinary( profilePhotoFilePath );
+
+    if ( profilePhotoFilePath )
+    {
+        if ( !profilePhotoFile )
+        {
+            throw new ApiError( 500, "Error while uploading profile photo file" );
+        }
+        else
+        {
+            profilePhotoFilePath = profilePhotoFile.url
+        }
+    }
+
     const user = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
                 username,
-                email
+                email,
+                profilePhoto: profilePhotoFilePath,
             }
         },
         { new: true }
