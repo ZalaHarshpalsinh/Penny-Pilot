@@ -171,7 +171,7 @@ const registerBorrowTransaction = asyncHandler( async ( req, res ) =>
     let { title, description, amount, transactionDateTime, moneyPool, dummyFriend } = req.body
 
     const transaction = new Transaction( {
-        title, description, type: "Lend", amount, transactionDateTime, user: req.user._id
+        title, description, type: "Borrow", amount, transactionDateTime, user: req.user._id
     } )
 
     moneyPool = await MoneyPool.findById( moneyPool );
@@ -179,7 +179,7 @@ const registerBorrowTransaction = asyncHandler( async ( req, res ) =>
 
     transaction.dummyFriend = dummyFriend._id;
     dummyFriend.amount -= transaction.amount
-    transaction.fromMoneyPool = moneyPool._id;
+    transaction.toMoneyPool = moneyPool._id;
     moneyPool.amount += transaction.amount;
     await moneyPool.save()
     await dummyFriend.save()
@@ -196,7 +196,7 @@ const registerTransferTransaction = asyncHandler( async ( req, res ) =>
     let { title, description, amount, transactionDateTime, fromMoneyPool, toMoneyPool } = req.body
 
     const transaction = new Transaction( {
-        title, description, type: "Lend", amount, transactionDateTime, user: req.user._id
+        title, description, type: "Transfer", amount, transactionDateTime, user: req.user._id
     } )
 
     fromMoneyPool = await MoneyPool.findById( fromMoneyPool );
